@@ -1,96 +1,667 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flexbox Website</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Interactive Particle Cursor with Controls</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html, #app {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            font-family: "Montserrat", Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%);
+            color: #fff;
+        }
+        
+        #app {
+            height: 100%;
+            position: relative;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            z-index: 2;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        
+        .buttons {
+            position: fixed;
+            width: 100%;
+            bottom: 15px;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        button, a {
+            color: white;
+            font-family: "Montserrat", serif;
+            font-size: 12px;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        button:hover, a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls-panel {
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+        
+        .controls-panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #feb47b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .slider-container label {
+            width: 160px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff7e5f;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .slider-value {
+            width: 40px;
+            text-align: right;
+            font-size: 13px;
+            color: #feb47b;
+            font-weight: 600;
+        }
+        
+        .color-picker-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .color-label {
+            width: 140px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+        
+        .reset-btn {
+            background: rgba(255, 126, 95, 0.2);
+            border-color: #ff7e5f;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(255, 126, 95, 0.4);
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-container label {
+            width: 160px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #ff7e5f;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        @media (max-width: 768px) {
+            .controls-panel {
+                width: calc(100% - 40px);
+                top: 100px;
+                left: 20px;
+                right: 20px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .header p {
+                font-size: 12px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="logo">MyFlexSite</div>
-            <nav class="nav">
-                <a href="#" class="nav-link">Главная</a>
-                <a href="#" class="nav-link">О нас</a>
-                <a href="#" class="nav-link">Услуги</a>
-                <a href="#" class="nav-link">Контакты</a>
-            </nav>
+    <div id="app">
+        <div class="header">
+            <h1>Interactive Particle Cursor</h1>
+            <p>Move your cursor around to interact with particles. Use the controls to adjust particle behavior in real-time.</p>
         </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Добро пожаловать на наш сайт</h1>
-            <p>Современный дизайн с использованием Flexbox</p>
-            <button class="btn">Узнать больше</button>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features">
-        <div class="container">
-            <h2>Наши преимущества</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Быстро</h3>
-                    <p>Высокая скорость работы и отзывчивый интерфейс</p>
+        
+        <canvas id="canvas"></canvas>
+        
+        <div class="controls-panel">
+            <h2><i class="fas fa-sliders-h"></i> Particle Controls</h2>
+            
+            <div class="control-group">
+                <h3>Particle Properties</h3>
+                
+                <div class="slider-container">
+                    <label for="attraction">Attraction Intensity:</label>
+                    <input type="range" id="attraction" min="0" max="2" step="0.05" value="0.75">
+                    <div class="slider-value" id="attraction-value">0.75</div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Красиво</h3>
-                    <p>Современный и привлекательный дизайн</p>
+                
+                <div class="slider-container">
+                    <label for="size">Particle Size:</label>
+                    <input type="range" id="size" min="0.5" max="5" step="0.1" value="1.5">
+                    <div class="slider-value" id="size-value">1.5</div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📱</div>
-                    <h3>Адаптивно</h3>
-                    <p>Идеально отображается на всех устройствах</p>
+                
+                <div class="slider-container">
+                    <label for="count">Particle Count:</label>
+                    <input type="range" id="count" min="10" max="500" step="10" value="200">
+                    <div class="slider-value" id="count-value">200</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="speed">Movement Speed:</label>
+                    <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1.0">
+                    <div class="slider-value" id="speed-value">1.0</div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Gallery Section -->
-    <section class="gallery">
-        <div class="container">
-            <h2>Наша галерея</h2>
-            <div class="gallery-grid">
-                <div class="gallery-item">Изображение 1</div>
-                <div class="gallery-item">Изображение 2</div>
-                <div class="gallery-item">Изображение 3</div>
-                <div class="gallery-item">Изображение 4</div>
-                <div class="gallery-item">Изображение 5</div>
-                <div class="gallery-item">Изображение 6</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>О компании</h4>
-                    <p>Мы создаем современные и функциональные веб-сайты</p>
+            
+            <div class="control-group">
+                <h3>Color Settings</h3>
+                
+                <div class="color-picker-container">
+                    <div class="color-label">Light 1 Color:</div>
+                    <div class="color-preview" id="color1-preview" style="background-color: #ff7e5f;"></div>
+                    <input type="color" id="color1-picker" value="#ff7e5f" style="display: none;">
                 </div>
-                <div class="footer-section">
-                    <h4>Контакты</h4>
-                    <p>Email: info@example.com</p>
-                    <p>Телефон: +7 (999) 999-99-99</p>
+                
+                <div class="color-picker-container">
+                    <div class="color-label">Light 2 Color:</div>
+                    <div class="color-preview" id="color2-preview" style="background-color: #feb47b;"></div>
+                    <input type="color" id="color2-picker" value="#feb47b" style="display: none;">
                 </div>
-                <div class="footer-section">
-                    <h4>Соцсети</h4>
-                    <div class="social-links">
-                        <a href="#">VK</a>
-                        <a href="#">Telegram</a>
-                        <a href="#">YouTube</a>
-                    </div>
+                
+                <div class="color-picker-container">
+                    <div class="color-label">Background Color:</div>
+                    <div class="color-preview" id="bgcolor-preview" style="background-color: #0c0c0c;"></div>
+                    <input type="color" id="bgcolor-picker" value="#0c0c0c" style="display: none;">
                 </div>
             </div>
+            
+            <div class="control-group">
+                <h3>Behavior Settings</h3>
+                
+                <div class="toggle-container">
+                    <label for="attraction-toggle">Attraction Effect:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="attraction-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-container">
+                    <label for="particles-toggle">Show Particles:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="particles-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="interaction">Interaction Radius:</label>
+                    <input type="range" id="interaction" min="50" max="300" step="10" value="150">
+                    <div class="slider-value" id="interaction-value">150</div>
+                </div>
+            </div>
+            
+            <button class="reset-btn" id="reset-btn">
+                <i class="fas fa-redo"></i> Reset to Defaults
+            </button>
         </div>
-    </footer>
+        
+        <div class="buttons">
+            <button type="button" id="colors-btn">
+                <i class="fas fa-random"></i> Random Colors
+            </button>
+            <a href="https://www.framer.com/marketplace/plugins/kevin-levron/particle-attraction-cursor/" target="_blank">
+                <i class="fas fa-external-link-alt"></i> Framer Component
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the AttractionCursor library
+        import AttractionCursor from "https://cdn.jsdelivr.net/npm/threejs-components@0.0.26/build/cursors/attraction1.min.js";
+
+        // Initialize the particle cursor
+        const canvas = document.getElementById('canvas');
+        const app = AttractionCursor(canvas, {
+            particles: {
+                attractionIntensity: 0.75,
+                size: 1.5,
+                count: 200,
+                speed: 1.0,
+                interactionRadius: 150
+            },
+        });
+
+        // UI Controls
+        const attractionSlider = document.getElementById('attraction');
+        const sizeSlider = document.getElementById('size');
+        const countSlider = document.getElementById('count');
+        const speedSlider = document.getElementById('speed');
+        const interactionSlider = document.getElementById('interaction');
+        
+        const attractionValue = document.getElementById('attraction-value');
+        const sizeValue = document.getElementById('size-value');
+        const countValue = document.getElementById('count-value');
+        const speedValue = document.getElementById('speed-value');
+        const interactionValue = document.getElementById('interaction-value');
+        
+        const color1Preview = document.getElementById('color1-preview');
+        const color2Preview = document.getElementById('color2-preview');
+        const bgColorPreview = document.getElementById('bgcolor-preview');
+        
+        const color1Picker = document.getElementById('color1-picker');
+        const color2Picker = document.getElementById('color2-picker');
+        const bgColorPicker = document.getElementById('bgcolor-picker');
+        
+        const attractionToggle = document.getElementById('attraction-toggle');
+        const particlesToggle = document.getElementById('particles-toggle');
+        
+        const randomColorsBtn = document.getElementById('colors-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // Update slider value displays
+        attractionSlider.addEventListener('input', function() {
+            attractionValue.textContent = this.value;
+            if (app.particles) {
+                app.particles.attractionIntensity = parseFloat(this.value);
+            }
+        });
+        
+        sizeSlider.addEventListener('input', function() {
+            sizeValue.textContent = this.value;
+            if (app.particles) {
+                app.particles.size = parseFloat(this.value);
+            }
+        });
+        
+        countSlider.addEventListener('input', function() {
+            countValue.textContent = this.value;
+            if (app.particles) {
+                // Note: This property might not exist in the library
+                // We'll simulate it by adjusting particle density if possible
+                try {
+                    app.particles.count = parseInt(this.value);
+                } catch(e) {
+                    console.log("Particle count adjustment not supported in this version");
+                }
+            }
+        });
+        
+        speedSlider.addEventListener('input', function() {
+            speedValue.textContent = this.value;
+            if (app.particles) {
+                // Simulating speed control
+                try {
+                    app.particles.speed = parseFloat(this.value);
+                } catch(e) {
+                    console.log("Speed adjustment not supported in this version");
+                }
+            }
+        });
+        
+        interactionSlider.addEventListener('input', function() {
+            interactionValue.textContent = this.value;
+            if (app.particles) {
+                // Simulating interaction radius control
+                try {
+                    app.particles.interactionRadius = parseInt(this.value);
+                } catch(e) {
+                    console.log("Interaction radius adjustment not supported in this version");
+                }
+            }
+        });
+        
+        // Color pickers
+        color1Preview.addEventListener('click', function() {
+            color1Picker.click();
+        });
+        
+        color2Preview.addEventListener('click', function() {
+            color2Picker.click();
+        });
+        
+        bgColorPreview.addEventListener('click', function() {
+            bgColorPicker.click();
+        });
+        
+        color1Picker.addEventListener('input', function() {
+            const color = this.value;
+            color1Preview.style.backgroundColor = color;
+            // Convert hex to rgb for Three.js
+            const rgb = hexToRgb(color);
+            if (app.particles && app.particles.light1) {
+                app.particles.light1.color.set(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+            }
+        });
+        
+        color2Picker.addEventListener('input', function() {
+            const color = this.value;
+            color2Preview.style.backgroundColor = color;
+            // Convert hex to rgb for Three.js
+            const rgb = hexToRgb(color);
+            if (app.particles && app.particles.light2) {
+                app.particles.light2.color.set(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+            }
+        });
+        
+        bgColorPicker.addEventListener('input', function() {
+            const color = this.value;
+            bgColorPreview.style.backgroundColor = color;
+            // Update background color
+            document.body.style.background = color;
+        });
+        
+        // Toggle controls
+        attractionToggle.addEventListener('change', function() {
+            if (app.particles) {
+                // Toggle attraction effect
+                app.particles.attractionIntensity = this.checked ? parseFloat(attractionSlider.value) : 0;
+            }
+        });
+        
+        particlesToggle.addEventListener('change', function() {
+            if (app.particles) {
+                // Toggle particle visibility
+                // This is a simulated effect since the library might not expose this directly
+                try {
+                    app.particles.visible = this.checked;
+                } catch(e) {
+                    console.log("Visibility control not supported in this version");
+                }
+            }
+        });
+        
+        // Random colors button
+        randomColorsBtn.addEventListener('click', () => {
+            // Generate random colors
+            const randomColor1 = getRandomColor();
+            const randomColor2 = getRandomColor();
+            
+            // Update color pickers and previews
+            color1Picker.value = randomColor1;
+            color1Preview.style.backgroundColor = randomColor1;
+            
+            color2Picker.value = randomColor2;
+            color2Preview.style.backgroundColor = randomColor2;
+            
+            // Convert hex to rgb for Three.js
+            const rgb1 = hexToRgb(randomColor1);
+            const rgb2 = hexToRgb(randomColor2);
+            
+            // Apply to particle lights
+            if (app.particles && app.particles.light1 && app.particles.light2) {
+                app.particles.light1.color.set(rgb1.r / 255, rgb1.g / 255, rgb1.b / 255);
+                app.particles.light2.color.set(rgb2.r / 255, rgb2.g / 255, rgb2.b / 255);
+            }
+        });
+        
+        // Reset button
+        resetBtn.addEventListener('click', () => {
+            // Reset sliders
+            attractionSlider.value = 0.75;
+            sizeSlider.value = 1.5;
+            countSlider.value = 200;
+            speedSlider.value = 1.0;
+            interactionSlider.value = 150;
+            
+            // Reset values display
+            attractionValue.textContent = "0.75";
+            sizeValue.textContent = "1.5";
+            countValue.textContent = "200";
+            speedValue.textContent = "1.0";
+            interactionValue.textContent = "150";
+            
+            // Reset colors
+            color1Picker.value = "#ff7e5f";
+            color1Preview.style.backgroundColor = "#ff7e5f";
+            
+            color2Picker.value = "#feb47b";
+            color2Preview.style.backgroundColor = "#feb47b";
+            
+            bgColorPicker.value = "#0c0c0c";
+            bgColorPreview.style.backgroundColor = "#0c0c0c";
+            document.body.style.background = "linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%)";
+            
+            // Reset toggles
+            attractionToggle.checked = true;
+            particlesToggle.checked = true;
+            
+            // Apply reset to particle system
+            if (app.particles) {
+                app.particles.attractionIntensity = 0.75;
+                app.particles.size = 1.5;
+                
+                // Reset colors
+                const rgb1 = hexToRgb("#ff7e5f");
+                const rgb2 = hexToRgb("#feb47b");
+                
+                if (app.particles.light1 && app.particles.light2) {
+                    app.particles.light1.color.set(rgb1.r / 255, rgb1.g / 255, rgb1.b / 255);
+                    app.particles.light2.color.set(rgb2.r / 255, rgb2.g / 255, rgb2.b / 255);
+                }
+                
+                // Reset other properties if they exist
+                try {
+                    app.particles.speed = 1.0;
+                    app.particles.interactionRadius = 150;
+                    app.particles.visible = true;
+                } catch(e) {
+                    // Some properties might not be exposed
+                }
+            }
+        });
+        
+        // Helper functions
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (app.resize) {
+                app.resize();
+            }
+        });
+        
+        // Initial color setup
+        if (app.particles && app.particles.light1 && app.particles.light2) {
+            const rgb1 = hexToRgb("#ff7e5f");
+            const rgb2 = hexToRgb("#feb47b");
+            
+            app.particles.light1.color.set(rgb1.r / 255, rgb1.g / 255, rgb1.b / 255);
+            app.particles.light2.color.set(rgb2.r / 255, rgb2.g / 255, rgb2.b / 255);
+        }
+        
+        // Add some instructions
+        console.log("Interactive Particle Cursor initialized!");
+        console.log("Move your cursor around to interact with particles.");
+        console.log("Use the controls panel to adjust particle behavior.");
+    </script>
 </body>
 </html>
